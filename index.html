@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>팀 프로젝트 캘린더</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     설정: 이 두 값만 바꾸면 됩니다
+     ============================================================ */
+  /* 구글시트 "웹에 게시 > CSV" 로 만든 URL을 여기 넣으세요.
+     비워두면(=null) 아래 SAMPLE_DATA 로 동작합니다. */
+  :root{}
+</style>
+<style>
+  :root{
+    --bg: #F3F5F7;
+    --panel: #FFFFFF;
+    --ink: #1B2333;
+    --ink-muted: #5B6472;
+    --line: #E1E5EA;
+    --accent: #2F5D62;
+    --accent-soft: #DCE8E6;
+    --today: #D98E37;
+    --status-planned: #9AA3AE;
+    --status-active: #2F8F7A;
+    --status-done: #8B94A0;
+    --cat1:#6B8CAE; --cat2:#8FA998; --cat3:#C99A5B; --cat4:#A97C9C; --cat5:#C97B63; --cat6:#5B7DB1;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    min-height:100vh;
+  }
+
+  /* ---------- 비밀번호 게이트 ---------- */
+  #gate{
+    position:fixed; inset:0; background:var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    z-index:100;
+  }
+  #gate.hidden{ display:none; }
+  .gate-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:36px 32px; width:320px; text-align:center;
+    box-shadow:0 8px 30px rgba(20,30,40,0.08);
+  }
+  .gate-card h1{
+    font-family:'Space Grotesk',sans-serif; font-size:19px; margin:0 0 6px;
+  }
+  .gate-card p{ color:var(--ink-muted); font-size:13px; margin:0 0 20px; }
+  .gate-card input{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:8px;
+    font-size:14px; margin-bottom:10px; font-family:'IBM Plex Mono',monospace;
+  }
+  .gate-card button{
+    width:100%; padding:11px; border:none; border-radius:8px;
+    background:var(--accent); color:#fff; font-weight:600; font-size:14px; cursor:pointer;
+  }
+  .gate-card button:hover{ opacity:.92; }
+  .gate-error{ color:#B5473B; font-size:12px; margin-top:8px; min-height:14px; }
+
+  /* ---------- 본문 ---------- */
+  #app{ max-width:1100px; margin:0 auto; padding:28px 24px 60px; }
+
+  .top-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:22px; flex-wrap:wrap; gap:14px;
+  }
+  .month-nav{ display:flex; align-items:center; gap:10px; }
+  .month-nav button{
+    width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
+    background:var(--panel); cursor:pointer; font-size:15px; color:var(--ink);
+  }
+  .month-nav button:hover{ background:var(--accent-soft); }
+  .month-title{
+    font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; min-width:150px;
+  }
+  .today-btn{
+    border:1px solid var(--line); background:var(--panel); border-radius:999px !important;
+    padding:9px 20px; font-size:12px; cursor:pointer; color:var(--ink-muted);
+    width:auto !important; height:auto !important; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .today-btn:hover{ background:var(--accent-soft); color:var(--ink); }
+
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-muted); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend i{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  .cal{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    overflow:hidden;
+  }
+  .dow-row{
+    display:grid; grid-template-columns:repeat(7,1fr);
+    border-bottom:1px solid var(--line);
+  }
+  .dow-row div{
+    padding:10px 0; text-align:center; font-size:12px; font-weight:600;
+    color:var(--ink-muted); font-family:'IBM Plex Mono',monospace;
+  }
+
+  .week{ border-bottom:1px solid var(--line); position:relative; }
+  .week:last-child{ border-bottom:none; }
+  .day-nums{ display:grid; grid-template-columns:repeat(7,1fr); }
+  .day-num{
+    padding:8px 8px 4px; font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--ink-muted); border-left:1px solid var(--line); min-height:28px;
+  }
+  .day-num:first-child{ border-left:none; }
+  .day-num.out{ color:#C7CDD3; }
+  .day-num.today .num-badge{
+    background:var(--today); color:#fff; border-radius:50%;
+    width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center;
+  }
+
+  .lanes{ padding-bottom:6px; }
+  .lane{
+    display:grid; grid-template-columns:repeat(7,1fr); column-gap:0; height:22px; margin-bottom:3px;
+  }
+  .bar{
+    grid-row:1; margin:2px 3px; border-radius:6px; font-size:11px; color:#fff;
+    display:flex; align-items:center; padding:0 8px; cursor:pointer; overflow:hidden;
+    white-space:nowrap; font-weight:500; opacity:0.94;
+  }
+  .bar:hover{ opacity:1; transform:translateY(-1px); }
+  .bar.cap-start{ border-top-left-radius:6px; border-bottom-left-radius:6px; }
+  .bar.cap-end{ border-top-right-radius:6px; border-bottom-right-radius:6px; }
+  .bar.cap-noStart{ border-top-left-radius:0; border-bottom-left-radius:0; margin-left:0; }
+  .bar.cap-noEnd{ border-top-right-radius:0; border-bottom-right-radius:0; margin-right:0; }
+
+  .foot-note{
+    margin-top:16px; font-size:12px; color:var(--ink-muted); text-align:right;
+  }
+
+  /* ---------- 모달 ---------- */
+  #modal-backdrop{
+    position:fixed; inset:0; background:rgba(20,30,40,0.35);
+    display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  #modal-backdrop.show{ display:flex; }
+  .modal{
+    background:var(--panel); border-radius:14px; width:380px; max-width:90vw;
+    padding:26px; box-shadow:0 20px 50px rgba(20,30,40,0.2);
+  }
+  .modal-cat{ font-size:11px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:.04em; }
+  .modal h2{ font-family:'Space Grotesk',sans-serif; font-size:19px; margin:6px 0 14px; }
+  .modal-row{ display:flex; gap:10px; font-size:13px; margin-bottom:9px; }
+  .modal-row .label{ color:var(--ink-muted); width:72px; flex-shrink:0; }
+  .status-pill{
+    display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; color:#fff;
+  }
+  .modal-link{
+    display:inline-flex; align-items:center; gap:5px;
+    background:var(--accent); color:#fff; text-decoration:none; font-size:12px;
+    padding:6px 12px; border-radius:999px; font-weight:600;
+  }
+  .modal-link:hover{ opacity:.9; }
+  .modal-close{
+    position:absolute; top:16px; right:18px; border:none; background:none;
+    font-size:18px; cursor:pointer; color:var(--ink-muted);
+  }
+  .modal{ position:relative; }
+</style>
+</head>
+<body>
+
+  <div id="gate">
+    <div class="gate-card">
+      <h1>팀 프로젝트 캘린더</h1>
+      <p>비밀번호를 입력해주세요</p>
+      <input type="password" id="pw-input" placeholder="password">
+      <button onclick="tryUnlock()">입장</button>
+      <div class="gate-error" id="pw-error"></div>
+    </div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <div class="top-bar">
+      <div class="month-nav">
+        <button onclick="changeMonth(-1)">←</button>
+        <div class="month-title" id="month-title"></div>
+        <button onclick="changeMonth(1)">→</button>
+        <button class="today-btn" onclick="goToday()">Today</button>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="cal">
+      <div class="dow-row">
+        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+      </div>
+      <div id="weeks"></div>
+    </div>
+
+    <div class="foot-note" id="foot-note"></div>
+  </div>
+
+  <div id="modal-backdrop" onclick="if(event.target===this) closeModal()">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-cat" id="m-cat"></div>
+      <h2 id="m-title"></h2>
+      <div class="modal-row"><div class="label">주기</div><div id="m-cycle"></div></div>
+      <div class="modal-row"><div class="label">기간</div><div id="m-dates"></div></div>
+      <div class="modal-row"><div class="label">담당자</div><div id="m-people"></div></div>
+      <div class="modal-row"><div class="label">상태</div><div id="m-status"></div></div>
+      <div class="modal-row" id="m-desc-row"><div class="label">관련 내용</div><div id="m-desc"></div></div>
+    <div id="m-links" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;"></div>
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   설정 영역
+   ============================================================ */
+// 구글시트 "파일 > 공유 > 웹에 게시 > CSV" 로 발행한 URL을 여기 넣으세요.
+// 예: "https://docs.google.com/spreadsheets/d/e/2PACX-xxxx/pub?output=csv"
+// 비워두면(null) 아래 SAMPLE_DATA로 동작합니다 (디자인 확인용 샘플입니다).
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSaWl9PQ-8Nsc94oPL7hJsRwUhonrZmmwIl1-2FUEQdcIwvXHMx_GnOm8pjQ1edEqjI-plviE2J4-Ej/pub?gid=0&single=true&output=csv";
+
+// 페이지 접근 비밀번호 (클라이언트 코드이므로 완전한 보안은 아닙니다 — 가벼운 접근 제한용입니다)
+const PAGE_PASSWORD = "smcpeople";
+
+const STATUS_COLORS = { "예정":"var(--status-planned)", "진행중":"var(--status-active)", "완료":"var(--status-done)" };
+
+// 프로젝트 바는 카테고리 수와 무관하게 항상 블랙 단색으로 표시합니다.
+const BAR_COLOR = "#1A1A1A";
+
+// 샘플 데이터 (실제 시트 연결 전 디자인 확인용 — 연동되면 사용되지 않습니다)
+const SAMPLE_DATA = [
+  { name:"AI 역량 평가 2026", start:"2026-07-01", end:"2026-07-20", people:"김일영, 박서준", status:"진행중", cycle:"Spot", category:"HR평가", link:"https://example.com/ai-assessment", desc:"전사 403명 대상 평가" },
+  { name:"하반기 공채", start:"2026-07-10", end:"2026-07-28", people:"이도현", status:"예정", cycle:"Spot", category:"채용", link:"https://example.com/recruit", desc:"" },
+  { name:"신입 온보딩 교육", start:"2026-07-05", end:"2026-07-09", people:"최유나, 박서준", status:"완료", cycle:"Monthly", category:"교육", link:"https://example.com/onboarding", desc:"" },
+  { name:"조직문화 진단", start:"2026-07-15", end:"2026-08-02", people:"김일영", status:"진행중", cycle:"Weekly", category:"조직개발", link:"https://example.com/culture-survey, https://example.com/culture-report", desc:"설문 + FGI 병행" }
+];
+
+/* ============================================================
+   데이터 로드
+   ============================================================ */
+let PROJECTS = [];
+
+function parseCSV(text){
+  const rows = text.trim().split(/\r?\n/).map(r=>{
+    // 단순 CSV 파서 (콤마 포함 필드는 쌍따옴표로 감싸야 함)
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<r.length;i++){
+      const c=r[i];
+      if(c==='"'){ inQ=!inQ; continue; }
+      if(c===',' && !inQ){ out.push(cur); cur=''; continue; }
+      cur+=c;
+    }
+    out.push(cur);
+    return out.map(s=>s.trim());
+  });
+  const header = rows[0].map(h=>h.trim());
+  return rows.slice(1).filter(r=>r.length>1 && r[0]!=='').map(r=>{
+    const obj={};
+    header.forEach((h,i)=> obj[h]=r[i]||'');
+    return {
+      name: obj['프로젝트명']||'',
+      start: obj['시작일']||'',
+      end: obj['종료일']||obj['시작일']||'',
+      people: obj['담당자']||'',
+      status: obj['상태']||'예정',
+      cycle: obj['주기']||'',
+      category: obj['카테고리']||'기타',
+      link: obj['링크']||'',
+      desc: obj['관련 내용']||''
+    };
+  });
+}
+
+async function loadData(){
+  if(!CSV_URL){
+    PROJECTS = SAMPLE_DATA;
+    document.getElementById('foot-note').textContent = '⚠ 샘플 데이터로 표시 중입니다. CSV_URL을 설정하면 실제 시트와 연동됩니다.';
+    render();
+    return;
+  }
+  try{
+    const res = await fetch(CSV_URL + (CSV_URL.includes('?')?'&':'?') + 'cachebust=' + Date.now());
+    const text = await res.text();
+    PROJECTS = parseCSV(text);
+    document.getElementById('foot-note').textContent = '';
+  }catch(e){
+    PROJECTS = SAMPLE_DATA;
+    document.getElementById('foot-note').textContent = '⚠ 시트 로드 실패 — 샘플 데이터로 표시 중입니다.';
+  }
+  render();
+}
+
+/* ============================================================
+   비밀번호 게이트
+   ============================================================ */
+function tryUnlock(){
+  const val = document.getElementById('pw-input').value;
+  if(val === PAGE_PASSWORD){
+    document.getElementById('gate').classList.add('hidden');
+    document.getElementById('app').style.display = 'block';
+    loadData();
+  }else{
+    document.getElementById('pw-error').textContent = '비밀번호가 올바르지 않습니다.';
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e=>{ if(e.key==='Enter') tryUnlock(); });
+
+/* ============================================================
+   캘린더 렌더링
+   ============================================================ */
+let viewDate = new Date();
+
+function changeMonth(delta){ viewDate.setMonth(viewDate.getMonth()+delta); render(); }
+function goToday(){ viewDate = new Date(); render(); }
+
+function fmt(d){ return d.toISOString().slice(0,10); }
+function toDate(s){ return new Date(s+'T00:00:00'); }
+
+function render(){
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  document.getElementById('month-title').textContent = `${year}년 ${month+1}월`;
+
+  const firstOfMonth = new Date(year, month, 1);
+  const startDow = firstOfMonth.getDay();
+  const gridStart = new Date(year, month, 1 - startDow);
+
+  const weeksEl = document.getElementById('weeks');
+  weeksEl.innerHTML = '';
+
+  const todayStr = fmt(new Date());
+
+  for(let w=0; w<6; w++){
+    const weekStart = new Date(gridStart); weekStart.setDate(gridStart.getDate() + w*7);
+    const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6);
+    if(weekStart.getMonth()!==month && weekStart > firstOfMonth && w>0 && weekStart.getMonth() !== month && weekStart.getDate() > 20 && w>=4){
+      // 다음달로 완전히 넘어간 여분 주는 스킵 (5주면 충분한 달 대비)
+    }
+
+    const weekDiv = document.createElement('div');
+    weekDiv.className = 'week';
+
+    // 날짜 숫자 행
+    const numsDiv = document.createElement('div');
+    numsDiv.className = 'day-nums';
+    for(let d=0; d<7; d++){
+      const day = new Date(weekStart); day.setDate(weekStart.getDate()+d);
+      const cell = document.createElement('div');
+      cell.className = 'day-num' + (day.getMonth()!==month ? ' out' : '') + (fmt(day)===todayStr ? ' today':'');
+      cell.innerHTML = fmt(day)===todayStr ? `<span class="num-badge">${day.getDate()}</span>` : day.getDate();
+      numsDiv.appendChild(cell);
+    }
+    weekDiv.appendChild(numsDiv);
+
+    // 이 주에 걸치는 프로젝트 찾기
+    const active = PROJECTS.filter(p=>{
+      const s = toDate(p.start), e = toDate(p.end);
+      return s <= weekEnd && e >= weekStart;
+    }).sort((a,b)=> toDate(a.start) - toDate(b.start));
+
+    // 레인 배치 (겹치지 않게)
+    const lanes = [];
+    active.forEach(p=>{
+      const s = toDate(p.start) < weekStart ? weekStart : toDate(p.start);
+      const e = toDate(p.end) > weekEnd ? weekEnd : toDate(p.end);
+      const colStart = s.getDay()+1, colEnd = e.getDay()+1;
+      let laneIdx = lanes.findIndex(l => l.every(seg => colEnd < seg.colStart || colStart > seg.colEnd));
+      if(laneIdx===-1){ laneIdx = lanes.length; lanes.push([]); }
+      lanes[laneIdx].push({ p, colStart, colEnd,
+        noStart: toDate(p.start) < weekStart, noEnd: toDate(p.end) > weekEnd });
+    });
+
+    const lanesDiv = document.createElement('div');
+    lanesDiv.className = 'lanes';
+    lanes.forEach(lane=>{
+      const laneDiv = document.createElement('div');
+      laneDiv.className = 'lane';
+      lane.forEach(seg=>{
+        const bar = document.createElement('div');
+        bar.className = 'bar' + (seg.noStart?' cap-noStart':' cap-start') + (seg.noEnd?' cap-noEnd':' cap-end');
+        bar.style.gridColumn = `${seg.colStart} / ${seg.colEnd+1}`;
+        bar.style.background = BAR_COLOR;
+        const parts = [seg.p.cycle, seg.p.name, seg.p.status].filter(Boolean);
+        bar.textContent = parts.join(' / ');
+        bar.onclick = ()=> openModal(seg.p);
+        laneDiv.appendChild(bar);
+      });
+      lanesDiv.appendChild(laneDiv);
+    });
+    weekDiv.appendChild(lanesDiv);
+
+    weeksEl.appendChild(weekDiv);
+
+    // 이번 달을 벗어난 두 번째 주 이후, 다음달 첫주까지 표시했으면 중단
+    if(w>=4 && weekEnd.getMonth()!==month) break;
+  }
+}
+
+function openModal(p){
+  document.getElementById('m-cat').textContent = p.category;
+  document.getElementById('m-title').textContent = p.name;
+  document.getElementById('m-cycle').textContent = p.cycle || '-';
+  document.getElementById('m-dates').textContent = `${p.start} ~ ${p.end}`;
+  document.getElementById('m-people').textContent = p.people;
+  document.getElementById('m-status').innerHTML = `<span class="status-pill" style="background:${STATUS_COLORS[p.status]||'#9AA3AE'}">${p.status}</span>`;
+  const descRow = document.getElementById('m-desc-row');
+  if(p.desc){ descRow.style.display='flex'; document.getElementById('m-desc').textContent = p.desc; }
+  else{ descRow.style.display='none'; }
+  const linksEl = document.getElementById('m-links');
+  linksEl.innerHTML = '';
+  const links = (p.link||'').split(',').map(s=>s.trim()).filter(Boolean);
+  links.forEach((url, i)=>{
+    const a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    a.className = 'modal-link';
+    a.textContent = links.length > 1 ? `🔗 관련 링크 바로가기 ${i+1}` : '🔗 관련 링크 바로가기';
+    linksEl.appendChild(a);
+  });
+  document.getElementById('modal-backdrop').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-backdrop').classList.remove('show'); }
+</script>
+</body>
+</html>

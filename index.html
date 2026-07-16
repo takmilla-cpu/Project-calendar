@@ -296,12 +296,20 @@ async function loadData(){
 /* ============================================================
    비밀번호 게이트
    ============================================================ */
+// ⬇ 비밀번호 게이트 임시 해제 중 (다시 걸려면 아래 3줄을 지우세요)
+document.getElementById('gate').classList.add('hidden');
+document.getElementById('app').style.display = 'block';
+loadData();
+setInterval(loadData, 60000);
+// ⬆ 여기까지 삭제하면 비밀번호 게이트가 다시 활성화됩니다
+
 function tryUnlock(){
   const val = document.getElementById('pw-input').value;
   if(val === PAGE_PASSWORD){
     document.getElementById('gate').classList.add('hidden');
     document.getElementById('app').style.display = 'block';
     loadData();
+    setInterval(loadData, 60000); // 60초마다 시트 데이터 자동 재조회
   }else{
     document.getElementById('pw-error').textContent = '비밀번호가 올바르지 않습니다.';
   }

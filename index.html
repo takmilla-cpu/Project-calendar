@@ -23,7 +23,7 @@
     --line: #E1E5EA;
     --accent: #2F5D62;
     --accent-soft: #DCE8E6;
-    --today: #D98E37;
+    --today: #39FF14;
     --status-planned: #9AA3AE;
     --status-active: #2F8F7A;
     --status-done: #8B94A0;
@@ -72,18 +72,38 @@
   }
   .month-nav{ display:flex; align-items:center; gap:10px; }
   .month-nav button{
-    width:32px; height:32px; border-radius:8px; border:1px solid var(--line);
-    background:var(--panel); cursor:pointer; font-size:15px; color:var(--ink);
+    width:26px; height:26px; border-radius:50%; border:none;
+    background:var(--panel); cursor:pointer; font-size:14px; color:var(--ink);
   }
   .month-nav button:hover{ background:var(--accent-soft); }
   .month-title{
     font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; min-width:150px;
   }
-  .today-btn{
-    border:1px solid var(--line); background:var(--panel); border-radius:999px !important;
-    padding:9px 20px; font-size:12px; cursor:pointer; color:var(--ink-muted);
-    width:auto !important; height:auto !important; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;
+  .title-part{ cursor:pointer; border-radius:6px; padding:2px 4px; }
+  .title-part:hover{ background:var(--accent-soft); }
+  .title-caret{ font-size:14px; color:var(--ink-muted); }
+  .picker{
+    display:none; position:absolute; top:calc(100% + 8px); left:0; z-index:40;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    box-shadow:0 10px 30px rgba(20,30,40,0.15); padding:12px; width:260px;
   }
+  .picker.show{ display:block; }
+  .picker-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .picker-cell{
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:500;
+    text-align:center; padding:9px 0; border-radius:8px; cursor:pointer; color:var(--ink);
+  }
+  .picker-cell:hover{ background:var(--accent-soft); }
+  .picker-cell.current{ background:var(--accent); color:#fff; }
+  .picker-years{ max-height:220px; overflow-y:auto; }
+  .today-btn{
+    box-sizing:border-box; border:1px solid var(--line); background:var(--panel); border-radius:999px !important;
+    padding:0 15px; height:28px !important; font-size:11px; line-height:1; cursor:pointer; color:var(--ink-muted);
+    width:auto !important; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;
+    font-family:inherit; -webkit-appearance:none; appearance:none; margin:0; vertical-align:middle; text-decoration:none;
+  }
+  #data-btn{ align-self:flex-end; margin-top:14px; border:1px solid transparent; background:#39FF14 !important; color:#0A2E00; }
+  #data-btn:hover{ background:#33E512 !important; color:#0A2E00; }
   .today-btn:hover{ background:var(--accent-soft); color:var(--ink); }
 
   .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--ink-muted); }
@@ -113,24 +133,38 @@
   .day-num:first-child{ border-left:none; }
   .day-num.out{ color:#C7CDD3; }
   .day-num.today .num-badge{
-    background:var(--today); color:#fff; border-radius:50%;
+    background:var(--today); color:#0A2E00; border-radius:50%;
     width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center;
   }
 
   .lanes{ padding-bottom:6px; }
   .lane{
-    display:grid; grid-template-columns:repeat(7,1fr); column-gap:0; height:22px; margin-bottom:3px;
+    display:grid; grid-template-columns:repeat(7,1fr); column-gap:0; height:25px; margin-bottom:3px;
   }
   .bar{
     grid-row:1; margin:2px 3px; border-radius:6px; font-size:11px; color:#fff;
     display:flex; align-items:center; padding:0 8px; cursor:pointer; overflow:hidden;
     white-space:nowrap; font-weight:500; opacity:0.94;
   }
+  .bar-label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .bar-toggle{
+    display:flex; align-items:center; justify-content:center;
+    width:17px; height:17px; border-radius:50%; margin-right:6px;
+    background:rgba(255,255,255,0.22); font-size:15px; line-height:1; cursor:pointer; flex-shrink:0;
+  }
+  .bar-toggle:hover{ background:rgba(255,255,255,0.34); }
   .bar:hover{ opacity:1; transform:translateY(-1px); }
   .bar.cap-start{ border-top-left-radius:6px; border-bottom-left-radius:6px; }
   .bar.cap-end{ border-top-right-radius:6px; border-bottom-right-radius:6px; }
   .bar.cap-noStart{ border-top-left-radius:0; border-bottom-left-radius:0; margin-left:0; }
   .bar.cap-noEnd{ border-top-right-radius:0; border-bottom-right-radius:0; margin-right:0; }
+
+  .bullets-row{
+    display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:6px;
+  }
+  .bullet-box{
+    margin:0 3px; border-radius:6px; padding:5px 10px 6px; font-size:11px; line-height:1.5;
+  }
 
   .foot-note{
     margin-top:16px; font-size:12px; color:var(--ink-muted); text-align:right;
@@ -182,11 +216,15 @@
     <div class="top-bar">
       <div class="month-nav">
         <button onclick="changeMonth(-1)">←</button>
-        <div class="month-title" id="month-title"></div>
+        <div class="month-title" style="position:relative;">
+          <span id="year-title" class="title-part" onclick="togglePicker('year', event)"></span>
+          <span id="month-title-part" class="title-part" onclick="togglePicker('month', event)"></span>
+          <div id="picker" class="picker"></div>
+        </div>
         <button onclick="changeMonth(1)">→</button>
-        <button class="today-btn" onclick="goToday()">Today</button>
+        <a id="today-btn" class="today-btn" href="#" onclick="goToday(); return false;">Today</a>
       </div>
-      <div class="legend" id="legend"></div>
+      <a id="data-btn" class="today-btn" href="#" target="_blank" rel="noopener">Data</a>
     </div>
 
     <div class="cal">
@@ -209,6 +247,10 @@
       <div class="modal-row"><div class="label">담당자</div><div id="m-people"></div></div>
       <div class="modal-row"><div class="label">상태</div><div id="m-status"></div></div>
       <div class="modal-row" id="m-desc-row"><div class="label">관련 내용</div><div id="m-desc"></div></div>
+      <div id="m-todo-row" style="margin-top:4px; margin-bottom:10px;">
+        <div style="margin-bottom:6px; font-size:13px; color:var(--ink-muted);">할일</div>
+        <div id="m-todos" style="font-size:13px; line-height:1.6;"></div>
+      </div>
     <div id="m-links" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;"></div>
     </div>
   </div>
@@ -222,20 +264,51 @@
 // 비워두면(null) 아래 SAMPLE_DATA로 동작합니다 (디자인 확인용 샘플입니다).
 const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSaWl9PQ-8Nsc94oPL7hJsRwUhonrZmmwIl1-2FUEQdcIwvXHMx_GnOm8pjQ1edEqjI-plviE2J4-Ej/pub?gid=0&single=true&output=csv";
 
+// "Data" 버튼이 열 실제 구글시트 편집 링크 (CSV_URL과는 다른 링크입니다 — 주소창의 .../edit 형태 URL을 넣어주세요)
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1M5PvW1ZgKST-027SBaIAUYBjBC5ywePA2vctsdmezIY/edit?gid=0#gid=0";
+
 // 페이지 접근 비밀번호 (클라이언트 코드이므로 완전한 보안은 아닙니다 — 가벼운 접근 제한용입니다)
 const PAGE_PASSWORD = "smcpeople";
 
 const STATUS_COLORS = { "예정":"var(--status-planned)", "진행중":"var(--status-active)", "완료":"var(--status-done)" };
 
-// 프로젝트 바는 카테고리 수와 무관하게 항상 블랙 단색으로 표시합니다.
-const BAR_COLOR = "#1A1A1A";
+// 프로젝트별 색상: 프로젝트명을 기준으로 팔레트 중 하나를 고정 배정합니다.
+// (이름이 같으면 항상 같은 색이 나오도록 해시 방식으로 고정. 단, 같은 달 안에서 색이 겹치면 그 달에서만 다른 색으로 자동 조정)
+const PALETTE = [
+  { bar:'#534AB7', barText:'#EEEDFE', bg:'#EEEDFE', bgText:'#3C3489' }, // purple
+  { bar:'#0F6E56', barText:'#E1F5EE', bg:'#E1F5EE', bgText:'#085041' }, // teal
+  { bar:'#993C1D', barText:'#FAECE7', bg:'#FAECE7', bgText:'#712B13' }, // coral
+  { bar:'#993556', barText:'#FBEAF0', bg:'#FBEAF0', bgText:'#72243E' }, // pink
+  { bar:'#185FA5', barText:'#E6F1FB', bg:'#E6F1FB', bgText:'#0C447C' }, // blue
+  { bar:'#3B6D11', barText:'#EAF3DE', bg:'#EAF3DE', bgText:'#27500A' }, // green
+  { bar:'#854F0B', barText:'#FAEEDA', bg:'#FAEEDA', bgText:'#633806' }, // amber
+  { bar:'#A32D2D', barText:'#FCEBEB', bg:'#FCEBEB', bgText:'#791F1F' }, // red
+  { bar:'#26215C', barText:'#EEEDFE', bg:'#CECBF6', bgText:'#26215C' }, // deep purple
+  { bar:'#1D9E75', barText:'#04342C', bg:'#9FE1CB', bgText:'#04342C' }, // bright teal
+  { bar:'#D85A30', barText:'#4A1B0C', bg:'#F5C4B3', bgText:'#4A1B0C' }, // bright coral
+  { bar:'#D4537E', barText:'#4B1528', bg:'#F4C0D1', bgText:'#4B1528' }, // bright pink
+  { bar:'#378ADD', barText:'#042C53', bg:'#B5D4F4', bgText:'#042C53' }, // bright blue
+  { bar:'#639922', barText:'#173404', bg:'#C0DD97', bgText:'#173404' }, // bright green
+  { bar:'#BA7517', barText:'#412402', bg:'#FAC775', bgText:'#412402' }, // bright amber
+  { bar:'#5F5E5A', barText:'#F1EFE8', bg:'#D3D1C7', bgText:'#2C2C2A' }  // gray
+];
+function paletteIndex(name){
+  let h = 5381;
+  for(let i=0; i<name.length; i++){ h = ((h<<5)+h) + name.charCodeAt(i); h = h & 0xffffffff; }
+  return (h>>>0) % PALETTE.length;
+}
+// 이번 달에 실제 배정된 색 인덱스 (프로젝트명 -> 인덱스). render()에서 매번 새로 계산합니다.
+let monthColorMap = {};
+function projectColor(name){
+  return PALETTE[monthColorMap[name] !== undefined ? monthColorMap[name] : paletteIndex(name)];
+}
 
 // 샘플 데이터 (실제 시트 연결 전 디자인 확인용 — 연동되면 사용되지 않습니다)
 const SAMPLE_DATA = [
-  { name:"AI 역량 평가 2026", start:"2026-07-01", end:"2026-07-20", people:"김일영, 박서준", status:"진행중", cycle:"Spot", category:"HR평가", link:"https://example.com/ai-assessment", desc:"전사 403명 대상 평가" },
-  { name:"하반기 공채", start:"2026-07-10", end:"2026-07-28", people:"이도현", status:"예정", cycle:"Spot", category:"채용", link:"https://example.com/recruit", desc:"" },
-  { name:"신입 온보딩 교육", start:"2026-07-05", end:"2026-07-09", people:"최유나, 박서준", status:"완료", cycle:"Monthly", category:"교육", link:"https://example.com/onboarding", desc:"" },
-  { name:"조직문화 진단", start:"2026-07-15", end:"2026-08-02", people:"김일영", status:"진행중", cycle:"Weekly", category:"조직개발", link:"https://example.com/culture-survey, https://example.com/culture-report", desc:"설문 + FGI 병행" }
+  { name:"AI 역량 평가 2026", start:"2026-07-01", end:"2026-07-20", people:"김일영, 박서준", status:"진행중", cycle:"Spot", category:"HR평가", link:"https://example.com/ai-assessment", desc:"전사 403명 대상 평가", todos:["채점 기준표 배포","보완 대상자 재검토","최종 결과 공유"] },
+  { name:"하반기 공채", start:"2026-07-10", end:"2026-07-28", people:"이도현", status:"예정", cycle:"Spot", category:"채용", link:"https://example.com/recruit", desc:"", todos:["공고 게시","서류 접수 오픈"] },
+  { name:"신입 온보딩 교육", start:"2026-07-05", end:"2026-07-09", people:"최유나, 박서준", status:"완료", cycle:"Monthly", category:"교육", link:"https://example.com/onboarding", desc:"", todos:["강의 자료 최신화","만족도 조사 발송"] },
+  { name:"조직문화 진단", start:"2026-07-15", end:"2026-08-02", people:"김일영", status:"진행중", cycle:"Weekly", category:"조직개발", link:"https://example.com/culture-survey, https://example.com/culture-report", desc:"설문 + FGI 병행", todos:["설문 문항 최종 확정","FGI 대상자 리스트업"] }
 ];
 
 /* ============================================================
@@ -269,7 +342,8 @@ function parseCSV(text){
       cycle: obj['주기']||'',
       category: obj['카테고리']||'기타',
       link: obj['링크']||'',
-      desc: obj['관련 내용']||''
+      desc: obj['관련 내용']||'',
+      todos: (obj['할일']||'').split(';').map(s=>s.trim()).filter(Boolean)
     };
   });
 }
@@ -320,21 +394,90 @@ document.getElementById('pw-input').addEventListener('keydown', e=>{ if(e.key===
    캘린더 렌더링
    ============================================================ */
 let viewDate = new Date();
+const expandedProjects = new Set(); // 할일이 펼쳐진 프로젝트명 저장
+
+const dataBtn = document.getElementById('data-btn');
+if(SHEET_URL){ dataBtn.href = SHEET_URL; }
+else{ dataBtn.style.display = 'none'; } // SHEET_URL 미설정 시 버튼 숨김
 
 function changeMonth(delta){ viewDate.setMonth(viewDate.getMonth()+delta); render(); }
 function goToday(){ viewDate = new Date(); render(); }
 
+function togglePicker(mode, e){
+  e.stopPropagation();
+  const picker = document.getElementById('picker');
+  if(picker.classList.contains('show') && picker.dataset.mode === mode){
+    picker.classList.remove('show');
+    return;
+  }
+  picker.dataset.mode = mode;
+  picker.classList.add('show');
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  if(mode === 'month'){
+    picker.innerHTML = '<div class="picker-grid"></div>';
+    const grid = picker.querySelector('.picker-grid');
+    for(let m=0; m<12; m++){
+      const cell = document.createElement('div');
+      cell.className = 'picker-cell' + (m===month ? ' current' : '');
+      cell.textContent = `${m+1}월`;
+      cell.onclick = (ev)=>{ ev.stopPropagation(); viewDate.setMonth(m); picker.classList.remove('show'); render(); };
+      grid.appendChild(cell);
+    }
+  }else{
+    picker.innerHTML = '<div class="picker-grid picker-years"></div>';
+    const grid = picker.querySelector('.picker-grid');
+    for(let y=year-6; y<=year+6; y++){
+      const cell = document.createElement('div');
+      cell.className = 'picker-cell' + (y===year ? ' current' : '');
+      cell.textContent = `${y}`;
+      cell.onclick = (ev)=>{ ev.stopPropagation(); viewDate.setFullYear(y); picker.classList.remove('show'); render(); };
+      grid.appendChild(cell);
+    }
+  }
+}
+document.addEventListener('click', ()=>{
+  const picker = document.getElementById('picker');
+  if(picker) picker.classList.remove('show');
+});
+
 function fmt(d){ return d.toISOString().slice(0,10); }
 function toDate(s){ return new Date(s+'T00:00:00'); }
+function formatRange(start, end){
+  const md = s => { const [,m,d] = s.split('-').map(Number); return `${m}/${d}`; };
+  return `${md(start)}~${md(end)}`;
+}
 
 function render(){
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
-  document.getElementById('month-title').textContent = `${year}년 ${month+1}월`;
+  document.getElementById('year-title').innerHTML = `${year}년 <span class="title-caret">▾</span>`;
+  document.getElementById('month-title-part').innerHTML = `${month+1}월 <span class="title-caret">▾</span>`;
 
   const firstOfMonth = new Date(year, month, 1);
   const startDow = firstOfMonth.getDay();
   const gridStart = new Date(year, month, 1 - startDow);
+  const gridEnd = new Date(gridStart); gridEnd.setDate(gridStart.getDate() + 41); // 6주 그리드 끝
+
+  // 이번 달 그리드에 보이는 프로젝트들의 색상 배정 (같은 달 안에서는 색 중복 방지)
+  monthColorMap = {};
+  const usedIdx = new Set();
+  const visible = PROJECTS
+    .filter(p => toDate(p.start) <= gridEnd && toDate(p.end) >= gridStart)
+    .sort((a,b) => toDate(a.start) - toDate(b.start)); // 시작일 순으로 안정적 배정
+  visible.forEach(p=>{
+    if(monthColorMap[p.name] !== undefined) return; // 이름 같은 항목은 같은 색
+    let idx = paletteIndex(p.name);
+    if(usedIdx.has(idx)){
+      // 이미 쓴 색이면, 비어있는 다음 색을 찾아 배정
+      for(let step=1; step<=PALETTE.length; step++){
+        const cand = (idx + step) % PALETTE.length;
+        if(!usedIdx.has(cand)){ idx = cand; break; }
+      }
+    }
+    monthColorMap[p.name] = idx;
+    usedIdx.add(idx);
+  });
 
   const weeksEl = document.getElementById('weeks');
   weeksEl.innerHTML = '';
@@ -387,16 +530,58 @@ function render(){
       const laneDiv = document.createElement('div');
       laneDiv.className = 'lane';
       lane.forEach(seg=>{
+        const pc = projectColor(seg.p.name);
         const bar = document.createElement('div');
         bar.className = 'bar' + (seg.noStart?' cap-noStart':' cap-start') + (seg.noEnd?' cap-noEnd':' cap-end');
         bar.style.gridColumn = `${seg.colStart} / ${seg.colEnd+1}`;
-        bar.style.background = BAR_COLOR;
-        const parts = [seg.p.cycle, seg.p.name, seg.p.status].filter(Boolean);
-        bar.textContent = parts.join(' / ');
+        bar.style.background = pc.bar;
+        bar.style.color = pc.barText;
+        const label = document.createElement('span');
+        label.className = 'bar-label';
+        if(!seg.noStart){
+          const parts = [seg.p.cycle, seg.p.name, seg.p.status, formatRange(seg.p.start, seg.p.end)].filter(Boolean);
+          label.textContent = parts.join(' / ');
+          if(seg.p.todos && seg.p.todos.length){
+            const toggle = document.createElement('span');
+            toggle.className = 'bar-toggle';
+            toggle.style.color = pc.barText;
+            toggle.textContent = expandedProjects.has(seg.p.name) ? '▴' : '▾';
+            toggle.onclick = (e)=>{
+              e.stopPropagation();
+              if(expandedProjects.has(seg.p.name)) expandedProjects.delete(seg.p.name);
+              else expandedProjects.add(seg.p.name);
+              render();
+            };
+            bar.appendChild(toggle);
+          }
+        }
+        bar.appendChild(label);
         bar.onclick = ()=> openModal(seg.p);
         laneDiv.appendChild(bar);
       });
       lanesDiv.appendChild(laneDiv);
+
+      // 할일이 있고, 펼쳐진 상태인 프로젝트만 아래에 색 영역을 표시합니다 (텍스트는 시작 주에만)
+      const withTodos = lane.filter(seg => seg.p.todos && seg.p.todos.length && expandedProjects.has(seg.p.name));
+      if(withTodos.length){
+        const bulletsDiv = document.createElement('div');
+        bulletsDiv.className = 'bullets-row';
+        withTodos.forEach(seg=>{
+          const pc = projectColor(seg.p.name);
+          const box = document.createElement('div');
+          box.className = 'bullet-box';
+          box.style.gridColumn = `${seg.colStart} / ${seg.colEnd+1}`;
+          box.style.background = pc.bg;
+          box.style.color = pc.bgText;
+          if(!seg.noStart){
+            box.innerHTML = seg.p.todos.map(t=>`<div>· ${t}</div>`).join('');
+          }else{
+            box.style.minHeight = '18px';
+          }
+          bulletsDiv.appendChild(box);
+        });
+        lanesDiv.appendChild(bulletsDiv);
+      }
     });
     weekDiv.appendChild(lanesDiv);
 
@@ -417,6 +602,14 @@ function openModal(p){
   const descRow = document.getElementById('m-desc-row');
   if(p.desc){ descRow.style.display='flex'; document.getElementById('m-desc').textContent = p.desc; }
   else{ descRow.style.display='none'; }
+  const todoRow = document.getElementById('m-todo-row');
+  const todosEl = document.getElementById('m-todos');
+  if(p.todos && p.todos.length){
+    todoRow.style.display='block';
+    todosEl.innerHTML = p.todos.map(t=>`<div>· ${t}</div>`).join('');
+  }else{
+    todoRow.style.display='none';
+  }
   const linksEl = document.getElementById('m-links');
   linksEl.innerHTML = '';
   const links = (p.link||'').split(',').map(s=>s.trim()).filter(Boolean);

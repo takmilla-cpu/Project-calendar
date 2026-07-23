@@ -64,7 +64,30 @@
   .gate-error{ color:#B5473B; font-size:12px; margin-top:8px; min-height:14px; }
 
   /* ---------- 본문 ---------- */
-  #app{ max-width:1100px; margin:0 auto; padding:28px 24px 60px; }
+  #app{ max-width:1280px; margin:0 auto; padding:28px 24px 60px; }
+  .main-layout{ display:flex; gap:20px; align-items:flex-start; }
+  .sidebar{ width:240px; flex-shrink:0; display:flex; flex-direction:column; gap:18px; padding-top:66px; }
+  .cal-wrap{ flex:1; min-width:0; }
+  .sb-group-head{
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
+    color:#fff; padding:4px 12px; border-radius:999px; margin-bottom:10px;
+  }
+  .sb-card{
+    border:0.5px solid var(--line); border-left-width:3px; border-radius:8px;
+    padding:8px 10px; cursor:pointer; margin-bottom:7px; background:var(--panel);
+    transition:box-shadow .12s, transform .12s;
+  }
+  .sb-card:hover{ box-shadow:0 3px 10px rgba(20,30,40,0.1); transform:translateY(-1px); }
+  .sb-cat{ font-size:10px; color:var(--ink-muted); }
+  .sb-name{ font-size:12px; font-weight:600; margin:1px 0; color:var(--ink); }
+  .sb-date{ font-size:10px; color:var(--ink-muted); font-family:'IBM Plex Mono',monospace; }
+  .sb-cat-inline{ font-size:10px; color:var(--ink-muted); font-weight:400; }
+  @keyframes barFlash{ 0%,100%{ opacity:1; } 50%{ opacity:0.15; } }
+  .bar-flash{ animation:barFlash 0.4s ease-in-out 3; }
+  @media (max-width:860px){
+    .main-layout{ flex-direction:column; }
+    .sidebar{ width:100%; padding-top:0; }
+  }
 
   .top-bar{
     display:flex; align-items:center; justify-content:space-between;
@@ -169,6 +192,14 @@
   .foot-note{
     margin-top:16px; font-size:12px; color:var(--ink-muted); text-align:right;
   }
+  .usage-guide{
+    margin-top:20px; padding-top:14px; border-top:1px solid var(--line);
+    font-size:11px; line-height:1.7; color:var(--ink-muted);
+  }
+  .usage-title{ font-weight:600; margin-bottom:6px; color:var(--ink-muted); }
+  .usage-guide ul{ margin:0; padding-left:16px; }
+  .usage-guide li{ margin-bottom:2px; }
+  .usage-guide b{ font-weight:600; color:var(--ink); }
 
   /* ---------- 모달 ---------- */
   #modal-backdrop{
@@ -213,28 +244,43 @@
   </div>
 
   <div id="app" style="display:none;">
-    <div class="top-bar">
-      <div class="month-nav">
-        <button onclick="changeMonth(-1)">←</button>
-        <div class="month-title" style="position:relative;">
-          <span id="year-title" class="title-part" onclick="togglePicker('year', event)"></span>
-          <span id="month-title-part" class="title-part" onclick="togglePicker('month', event)"></span>
-          <div id="picker" class="picker"></div>
+    <div class="main-layout">
+      <div class="sidebar" id="sidebar"></div>
+      <div class="cal-wrap">
+        <div class="top-bar">
+          <div class="month-nav">
+            <button onclick="changeMonth(-1)">←</button>
+            <div class="month-title" style="position:relative;">
+              <span id="year-title" class="title-part" onclick="togglePicker('year', event)"></span>
+              <span id="month-title-part" class="title-part" onclick="togglePicker('month', event)"></span>
+              <div id="picker" class="picker"></div>
+            </div>
+            <button onclick="changeMonth(1)">→</button>
+            <a id="today-btn" class="today-btn" href="#" onclick="goToday(); return false;">Today</a>
+          </div>
+          <a id="data-btn" class="today-btn" href="#" target="_blank" rel="noopener">Data</a>
         </div>
-        <button onclick="changeMonth(1)">→</button>
-        <a id="today-btn" class="today-btn" href="#" onclick="goToday(); return false;">Today</a>
+        <div class="cal">
+          <div class="dow-row">
+            <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+          </div>
+          <div id="weeks"></div>
+        </div>
+        <div class="foot-note" id="foot-note"></div>
+        <div class="usage-guide">
+          <div class="usage-title">사용 안내</div>
+          <ul>
+            <li>프로젝트 데이터는 상단 우측 <b>Data</b> 버튼의 구글 시트에서 관리하며, 시트를 수정하면 페이지에 자동 반영됩니다 (최대 몇 분 소요).</li>
+            <li>달력의 색 막대는 프로젝트 하나를 나타내며, <b>주기 / 프로젝트명 / 상태 / 기간</b> 순으로 표시됩니다.</li>
+            <li>막대의 텍스트를 클릭하면 담당자·링크·할 일 등 상세 정보 팝업이 열립니다.</li>
+            <li>막대 앞의 원형 화살표(▾)를 누르면 그 프로젝트의 할 일 목록이 달력에서 바로 펼쳐집니다.</li>
+            <li>왼쪽 목록은 전체 프로젝트를 진행중·완료·예정으로 나눠 보여주며, 항목을 클릭하면 해당 프로젝트가 있는 달로 이동합니다.</li>
+            <li>상단의 <b>연도·월</b>을 클릭하면 원하는 시점으로 바로 이동할 수 있고, <b>Today</b>는 오늘이 있는 달로 돌아갑니다.</li>
+            <li>프로젝트 캘린더 &amp; 시트 관련 문의 - 탁현지P</li>
+          </ul>
+        </div>
       </div>
-      <a id="data-btn" class="today-btn" href="#" target="_blank" rel="noopener">Data</a>
     </div>
-
-    <div class="cal">
-      <div class="dow-row">
-        <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
-      </div>
-      <div id="weeks"></div>
-    </div>
-
-    <div class="foot-note" id="foot-note"></div>
   </div>
 
   <div id="modal-backdrop" onclick="if(event.target===this) closeModal()">
@@ -447,6 +493,10 @@ function formatRange(start, end){
   const md = s => { const [,m,d] = s.split('-').map(Number); return `${m}/${d}`; };
   return `${md(start)}~${md(end)}`;
 }
+function formatRangeYear(start, end){
+  const ymd = s => { const [y,m,d] = s.split('-').map(Number); return `${y}.${m}.${d}`; };
+  return `${ymd(start)}~${ymd(end)}`;
+}
 
 function render(){
   const year = viewDate.getFullYear();
@@ -536,6 +586,7 @@ function render(){
         bar.style.gridColumn = `${seg.colStart} / ${seg.colEnd+1}`;
         bar.style.background = pc.bar;
         bar.style.color = pc.barText;
+        if(!seg.noStart) bar.dataset.project = seg.p.name;
         const label = document.createElement('span');
         label.className = 'bar-label';
         if(!seg.noStart){
@@ -590,6 +641,58 @@ function render(){
     // 이번 달을 벗어난 두 번째 주 이후, 다음달 첫주까지 표시했으면 중단
     if(w>=4 && weekEnd.getMonth()!==month) break;
   }
+  renderSidebar();
+}
+
+// 좌측 사이드바: 전체 프로젝트를 상태별로 그룹핑, 각 그룹 내 최신순(시작일 늦은 순)
+function renderSidebar(){
+  const sb = document.getElementById('sidebar');
+  if(!sb) return;
+  sb.innerHTML = '';
+  const groups = [
+    { status:'진행중', color:'#D33A3A' },
+    { status:'완료', color:'#2B6CB0' },
+    { status:'예정', color:'#D9A93A' }
+  ];
+  groups.forEach(g=>{
+    const items = PROJECTS
+      .filter(p => (p.status||'') === g.status)
+      .sort((a,b)=> toDate(b.start) - toDate(a.start));
+    if(!items.length) return;
+    const groupEl = document.createElement('div');
+    const head = document.createElement('div');
+    head.className = 'sb-group-head';
+    head.style.background = g.color;
+    head.textContent = `${g.status} ${items.length}`;
+    groupEl.appendChild(head);
+    items.forEach(p=>{
+      const pc = PALETTE[paletteIndex(p.name)]; // 리스트는 기본(이름 기준) 색으로 표시
+      const card = document.createElement('div');
+      card.className = 'sb-card';
+      card.style.borderLeftColor = pc.bar;
+      card.innerHTML =
+        `<div class="sb-name">${p.category ? `<span class="sb-cat-inline">(${p.category})</span> ` : ''}${p.name}</div>`+
+        `<div class="sb-date">${formatRangeYear(p.start,p.end)}</div>`;
+      card.onclick = ()=> goToProject(p);
+      groupEl.appendChild(card);
+    });
+    sb.appendChild(groupEl);
+  });
+}
+
+// 사이드바 항목 클릭 → 그 프로젝트 시작월로 이동 후, 해당 바를 잠깐 깜빡여 강조
+function goToProject(p){
+  const s = toDate(p.start);
+  viewDate = new Date(s.getFullYear(), s.getMonth(), 1);
+  render();
+  setTimeout(()=>{
+    const bar = document.querySelector(`.bar[data-project="${(p.name||'').replace(/"/g,'\\"')}"]`);
+    if(bar){
+      bar.classList.add('bar-flash');
+      bar.scrollIntoView({ behavior:'smooth', block:'center' });
+      setTimeout(()=> bar.classList.remove('bar-flash'), 1300);
+    }
+  }, 60);
 }
 
 function openModal(p){

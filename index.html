@@ -314,7 +314,7 @@ const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSaWl9PQ-8Nsc94
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1M5PvW1ZgKST-027SBaIAUYBjBC5ywePA2vctsdmezIY/edit?gid=0#gid=0";
 
 // 페이지 접근 비밀번호 (클라이언트 코드이므로 완전한 보안은 아닙니다 — 가벼운 접근 제한용입니다)
-const PAGE_PASSWORD = "smcpeople";
+const PAGE_PASSWORD = "486";
 
 const STATUS_COLORS = { "예정":"var(--status-planned)", "진행중":"var(--status-active)", "완료":"var(--status-done)" };
 
@@ -416,13 +416,6 @@ async function loadData(){
 /* ============================================================
    비밀번호 게이트
    ============================================================ */
-// ⬇ 비밀번호 게이트 임시 해제 중 (다시 걸려면 아래 3줄을 지우세요)
-document.getElementById('gate').classList.add('hidden');
-document.getElementById('app').style.display = 'block';
-loadData();
-setInterval(loadData, 60000);
-// ⬆ 여기까지 삭제하면 비밀번호 게이트가 다시 활성화됩니다
-
 function tryUnlock(){
   const val = document.getElementById('pw-input').value;
   if(val === PAGE_PASSWORD){
